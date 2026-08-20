@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kandha
+      POSTGRES_PASSWORD: kandha
+      POSTGRES_DB: kandha
+    ports: ["5432:5432"]
+    volumes: [kandha_pg:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kandha"]
+      interval: 5s
+      retries: 10
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://kandha:kandha@db:5432/kandha?schema=public
+      JWT_SECRET: dev_only_secret_change_in_production
+      OTP_DEV_MODE: "true"
+      PORT: "8080"
+    ports: ["8080:8080"]
+volumes:
+  kandha_pg:

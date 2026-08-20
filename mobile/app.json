@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Kandha",
+    "slug": "kandha",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "kandha",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#0041F5" },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "in.kandha.app",
+      "versionCode": 1,
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#0041F5" },
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "CALL_PHONE", "VIBRATE"]
+    },
+    "ios": {
+      "bundleIdentifier": "in.kandha.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Kandha shares your location only while a job is running, so the person who booked you can see where their goods are. It stops the moment you mark the job delivered.",
+        "NSMicrophoneUsageDescription": "Used only if you choose to say your name instead of typing it."
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      ["expo-location", { "locationWhenInUsePermission": "Kandha shares your location only while a job is running." }]
+    ],
+    "extra": {
+      "apiUrl": "https://api.kandha.in",
+      "eas": { "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID" }
+    }
+  }
+}

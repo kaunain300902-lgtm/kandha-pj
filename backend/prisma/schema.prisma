@@ -1,0 +1,187 @@
+// Kandha — data model
+// One account per phone number. A user may hold a booker profile, a worker
+// profile, or both, but the two are separate records and the API never lets a
+// booker read worker-side data.
+
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+enum Role        { BOOKER WORKER ADMIN }
+enum Trade       { HEADLOAD HANDCART HANDVAN PORTER }
+enum JobKind     { BUSINESS PERSONAL }
+enum JobStatus   { OPEN ASSIGNED REACHED PICKED DELIVERED COMPLETED CANCELLED EXPIRED }
+enum AssignState { ACCEPTED REACHED PICKED DELIVERED CANCELLED }
+enum VerifyState { PENDING VERIFIED REJECTED }
+
+model City {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  unit      String   // nag | piece | than — the local unit of a package
+  workerWord String  // Mutia | Palledar | Mathadi | Hamal
+  langs     String[] // ["hi","bn","en"]
+  bandLow   Int      // union rate band, per unit, in rupees
+  bandHigh  Int
+  active    Boolean  @default(true)
+  markets   Market[]
+  jobs      Job[]
+  createdAt DateTime @default(now())
+}
+
+model Market {
+  id        String   @id @default(cuid())
+  cityId    String
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  name      String
+  lat       Float?
+  lng       Float?
+  active    Boolean  @default(true)
+  workers   WorkerProfile[]
+  jobs      Job[]
+  @@unique([cityId, name])
+}
+
+model User {
+  id         String   @id @default(cuid())
+  phone      String   @unique          // E.164 without '+', e.g. 919830144712
+  name       String?
+  role       Role     @default(BOOKER)
+  lang       String   @default("en")
+  cityId     String?
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  blocked    Boolean  @default(false)
+
+  worker     WorkerProfile?
+  jobs       Job[]           @relation("BookerJobs")
+  devices    Device[]
+  ratingsGiven Rating[]      @relation("RatingAuthor")
+  savedPlaces SavedPlace[]
+}
+
+model WorkerProfile {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        String      @unique          // KND 84217 — the number on his card
+  trades      Trade[]
+  marketId    String?
+  market      Market?     @relation(fields: [marketId], references: [id])
+  verify      VerifyState @default(PENDING)
+  verifiedAt  DateTime?
+  onDuty      Boolean     @default(false)
+  interMarket Boolean     @default(false)  // union-endorsed pass
+  photoUrl    String?
+  lastLat     Float?
+  lastLng     Float?
+  lastPingAt  DateTime?
+  ratingAvg   Float       @default(0)
+  ratingCount Int         @default(0)
+  jobsDone    Int         @default(0)
+  unitsDone   Int         @default(0)
+  assignments Assignment[]
+}
+
+model Job {
+  id         String    @id @default(cuid())
+  ref        String    @unique              // short human ref, e.g. K-4471
+  bookerId   String
+  booker     User      @relation("BookerJobs", fields: [bookerId], references: [id])
+  cityId     String
+  city       City      @relation(fields: [cityId], references: [id])
+  marketId   String
+  market     Market    @relation(fields: [marketId], references: [id])
+
+  kind       JobKind   @default(BUSINESS)
+  trade      Trade
+  units      Int                            // nags / pieces / thans
+  kgPerUnit  Int
+  helpers    Int       @default(1)
+
+  pickupText String
+  pickupNote String?
+  pickupLat  Float?
+  pickupLng  Float?
+  dropText   String
+  dropLat    Float?
+  dropLng    Float?
+
+  fareBase   Int                            // rupees, computed server-side
+  fareExtra  Int       @default(0)          // booker's voluntary top-up
+  allowOutside Boolean @default(false)
+  scheduledAt DateTime?
+  status     JobStatus @default(OPEN)
+  lrNumber   String?                        // bilty / consignment note
+  cancelReason String?
+
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  assignments Assignment[]
+  ratings    Rating[]
+
+  @@index([cityId, marketId, status])
+  @@index([bookerId, createdAt])
+}
+
+model Assignment {
+  id         String      @id @default(cuid())
+  jobId      String
+  job        Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  workerId   String
+  worker     WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  units      Int          @default(0)       // what this man is carrying
+  state      AssignState  @default(ACCEPTED)
+  acceptedAt DateTime     @default(now())
+  reachedAt  DateTime?
+  pickedAt   DateTime?
+  deliveredAt DateTime?
+  countWorker Int?                          // his count at pickup
+  countBooker Int?                          // the booker's count
+  photoUrl   String?
+  payout     Int          @default(0)
+  @@unique([jobId, workerId])
+  @@index([workerId, state])
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("RatingAuthor", fields: [authorId], references: [id])
+  subjectId String                              // userId of the person rated
+  stars     Int
+  note      String?
+  createdAt DateTime @default(now())
+  @@unique([jobId, authorId])
+}
+
+model SavedPlace {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label  String
+  text   String
+  lat    Float?
+  lng    Float?
+}
+
+model Device {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pushToken String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([phone, createdAt])
+}
