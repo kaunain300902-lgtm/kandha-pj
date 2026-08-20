@@ -3,15 +3,57 @@
 // profile, or both, but the two are separate records and the API never lets a
 // booker read worker-side data.
 
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum Role        { BOOKER WORKER ADMIN }
-enum Trade       { HEADLOAD HANDCART HANDVAN PORTER }
-enum JobKind     { BUSINESS PERSONAL }
-enum JobStatus   { OPEN ASSIGNED REACHED PICKED DELIVERED COMPLETED CANCELLED EXPIRED }
-enum AssignState { ACCEPTED REACHED PICKED DELIVERED CANCELLED }
-enum VerifyState { PENDING VERIFIED REJECTED }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BOOKER
+  WORKER
+  ADMIN
+}
+
+enum Trade {
+  HEADLOAD
+  HANDCART
+  HANDVAN
+  PORTER
+}
+
+enum JobKind {
+  BUSINESS
+  PERSONAL
+}
+
+enum JobStatus {
+  OPEN
+  ASSIGNED
+  REACHED
+  PICKED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum AssignState {
+  ACCEPTED
+  REACHED
+  PICKED
+  DELIVERED
+  CANCELLED
+}
+
+enum VerifyState {
+  PENDING
+  VERIFIED
+  REJECTED
+}
 
 model City {
   id        String   @id @default(cuid())
