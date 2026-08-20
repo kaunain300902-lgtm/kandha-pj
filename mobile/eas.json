@@ -5,7 +5,7 @@
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://api-staging.kandha.in" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://kandha-pj-1.onrender.com" }
     },
     "production": {
       "android": { "buildType": "app-bundle" },
