@@ -48,7 +48,15 @@
           "locationWhenInUsePermission": "Kandha shares your location only while a job is running."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://api.kandha.in",
